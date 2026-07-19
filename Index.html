@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Bionic Ear</title>
+<style>
+  :root {
+    --ink: #101418;
+    --panel: #1a2027;
+    --line: #2c353f;
+    --amber: #f5b942;
+    --amber-dim: #8a6a2a;
+    --text: #e8e4da;
+    --muted: #8d97a3;
+    --danger: #e2604a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 18px 32px;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+  header { text-align: center; margin-bottom: 6px; }
+  h1 {
+    font-size: 1.15rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text);
+  }
+  h1 span { color: var(--amber); }
+  .sub { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; margin-top: 4px; }
+  .warn {
+    margin: 14px 0 8px;
+    background: rgba(226,96,74,0.1);
+    border: 1px solid rgba(226,96,74,0.45);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    line-height: 1.45;
+    color: #f0b0a4;
+    max-width: 420px;
+    text-align: center;
+  }
+  .warn strong { color: var(--danger); }
+  .ring-wrap {
+    position: relative;
+    width: min(66vw, 260px);
+    height: min(66vw, 260px);
+    margin: 18px 0 10px;
+  }
+  svg.ring { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--line); stroke-width: 10; }
+  .ring-level { fill: none; stroke: var(--amber); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.06s linear; }
+  .ring-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .db-read { font-size: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .db-label { font-size: 0.68rem; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; margin-top: 2px; }
+  .power {
+    margin: 10px 0 22px;
+    width: 100%;
+    max-width: 420px;
+    padding: 16px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-radius: 12px;
+    border: 1px solid var(--amber-dim);
+    background: var(--panel);
+    color: var(--amber);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .power.live { background: var(--amber); color: var(--ink); border-color: var(--amber); }
+  .power:active { transform: scale(0.985); }
+  .panel {
+    width: 100%; max-width: 420px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 18px 20px;
+    margin-bottom: 14px;
+  }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .panel-title { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
+  .gain-read { font-size: 1.5rem; font-weight: 700; color: var(--amber); font-variant-numeric: tabular-nums; }
+  input[type=range] {
+    width: 100%;
+    appearance: none; -webkit-appearance: none;
+    height: 42px;
+    background: transparent;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 8px; border-radius: 4px;
+    background: linear-gradient(to right, var(--amber) 0%, var(--amber) var(--fill, 40%), var(--line) var(--fill, 40%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--text);
+    border: 3px solid var(--amber);
+    margin-top: -11px;
+  }
+  input[type=range]::-moz-range-track { height: 8px; border-radius: 4px; background: var(--line); }
+  input[type=range]::-moz-range-progress { height: 8px; border-radius: 4px; background: var(--amber); }
+  input[type=range]::-moz-range-thumb { width: 26px; height: 26px; border-radius: 50%; background: var(--text); border: 3px solid var(--amber); }
+  .scale { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: none; }
+  .row-label { font-size: 0.88rem; }
+  .row-hint { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+  .toggle {
+    position: relative; width: 48px; height: 28px; flex-shrink: 0;
+    background: var(--line); border-radius: 14px; border: none; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--text); transition: left 0.15s;
+  }
+  .toggle.on { background: var(--amber); }
+  .toggle.on::after { left: 23px; }
+  .status { font-size: 0.75rem; color: var(--muted); text-align: center; min-height: 1.2em; margin-top: 2px; }
+  .status.err { color: var(--danger); }
+  @media (prefers-reduced-motion: reduce) {
+    .ring-level { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Bionic <span>Ear</span></h1>
+  <div class="sub">Live microphone amplifier</div>
+</header>
+
+<div class="warn"><strong>Use wired headphones or earbuds.</strong> With the phone speaker, amplified mic audio will feed back into the mic and squeal loudly.</div>
+
+<div class="ring-wrap">
+  <svg class="ring" viewBox="0 0 200 200">
+    <circle class="ring-bg" cx="100" cy="100" r="88"/>
+    <circle class="ring-level" id="ringLevel" cx="100" cy="100" r="88"
+      stroke-dasharray="552.9" stroke-dashoffset="552.9"/>
+  </svg>
+  <div class="ring-center">
+    <div class="db-read" id="dbRead">&ndash;&ndash;</div>
+    <div class="db-label">input level dB</div>
+  </div>
+</div>
+
+<button class="power" id="powerBtn">Start Listening</button>
+<div class="status" id="status"></div>
+
+<div class="panel">
+  <div class="panel-head">
+    <span class="panel-title">Amplification</span>
+    <span class="gain-read" id="gainRead">5.0&times;</span>
+  </div>
+  <input type="range" id="gainSlider" min="1" max="10" step="0.1" value="5">
+  <div class="scale"><span>1&times;</span><span>2.5&times;</span><span>5&times;</span><span>7.5&times;</span><span>10&times;</span></div>
+</div>
+
+<div class="panel">
+  <div class="row">
+    <div>
+      <div class="row-label">Ear protection limiter</div>
+      <div class="row-hint">Compresses sudden loud sounds before they hit your ears</div>
+    </div>
+    <button class="toggle on" id="limiterToggle" aria-label="Toggle limiter"></button>
+  </div>
+  <div class="row">
+    <div>
+      <div class="row-label">Noise suppression</div>
+      <div class="row-hint">Cleaner but less raw. Restarts the mic when changed</div>
+    </div>
+    <button class="toggle" id="nsToggle" aria-label="Toggle noise suppression"></button>
+  </div>
+</div>
+
+<script>
+let ctx = null, stream = null, source = null, gainNode = null, limiter = null, analyser = null;
+let running = false, rafId = null;
+let noiseSuppression = false, limiterOn = true;
+
+const powerBtn = document.getElementById('powerBtn');
+const statusEl = document.getElementById('status');
+const gainSlider = document.getElementById('gainSlider');
+const gainRead = document.getElementById('gainRead');
+const ringLevel = document.getElementById('ringLevel');
+const dbRead = document.getElementById('dbRead');
+const limiterToggle = document.getElementById('limiterToggle');
+const nsToggle = document.getElementById('nsToggle');
+const CIRC = 552.9;
+
+function setStatus(msg, err) {
+  statusEl.textContent = msg || '';
+  statusEl.className = 'status' + (err ? ' err' : '');
+}
+
+function updateSliderFill() {
+  const pct = ((gainSlider.value - 1) / 9) * 100;
+  gainSlider.style.setProperty('--fill', pct + '%');
+  gainRead.innerHTML = parseFloat(gainSlider.value).toFixed(1) + '&times;';
+}
+updateSliderFill();
+
+gainSlider.addEventListener('input', () => {
+  updateSliderFill();
+  if (gainNode && ctx) {
+    gainNode.gain.setTargetAtTime(parseFloat(gainSlider.value), ctx.currentTime, 0.02);
+  }
+});
+
+function buildGraph() {
+  source = ctx.createMediaStreamSource(stream);
+  gainNode = ctx.createGain();
+  gainNode.gain.value = parseFloat(gainSlider.value);
+
+  limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -12;
+  limiter.knee.value = 4;
+  limiter.ratio.value = 20;
+  limiter.attack.value = 0.002;
+  limiter.release.value = 0.15;
+
+  analyser = ctx.createAnalyser();
+  analyser.fftSize = 1024;
+
+  source.connect(gainNode);
+  connectOutput();
+  gainNode.connect(analyser);
+}
+
+function connectOutput() {
+  try { gainNode.disconnect(ctx.destination); } catch(e) {}
+  try { gainNode.disconnect(limiter); } catch(e) {}
+  try { limiter.disconnect(); } catch(e) {}
+  if (limiterOn) {
+    gainNode.connect(limiter);
+    limiter.connect(ctx.destination);
+  } else {
+    gainNode.connect(ctx.destination);
+  }
+  if (analyser) gainNode.connect(analyser);
+}
+
+async function start() {
+  try {
+    setStatus('Requesting microphone...');
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: noiseSuppression,
+        autoGainControl: false
+      }
+    });
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+    await ctx.resume();
+    buildGraph();
+    running = true;
+    powerBtn.textContent = 'Stop Listening';
+    powerBtn.classList.add('live');
+    setStatus('Live. Adjust the slider to taste.');
+    meterLoop();
+  } catch (err) {
+    if (err.name === 'NotAllowedError') {
+      setStatus('Microphone permission denied. Allow mic access in your browser settings, then try again.', true);
+    } else if (err.name === 'NotFoundError') {
+      setStatus('No microphone found on this device.', true);
+    } else {
+      setStatus('Could not start audio: ' + err.message, true);
+    }
+  }
+}
+
+function stop() {
+  running = false;
+  if (rafId) cancelAnimationFrame(rafId);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  if (ctx) ctx.close();
+  ctx = stream = source = gainNode = limiter = analyser = null;
+  powerBtn.textContent = 'Start Listening';
+  powerBtn.classList.remove('live');
+  ringLevel.style.strokeDashoffset = CIRC;
+  dbRead.innerHTML = '&ndash;&ndash;';
+  setStatus('Stopped.');
+}
+
+powerBtn.addEventListener('click', () => running ? stop() : start());
+
+limiterToggle.addEventListener('click', () => {
+  limiterOn = !limiterOn;
+  limiterToggle.classList.toggle('on', limiterOn);
+  if (running) connectOutput();
+});
+
+nsToggle.addEventListener('click', async () => {
+  noiseSuppression = !noiseSuppression;
+  nsToggle.classList.toggle('on', noiseSuppression);
+  if (running) { stop(); await start(); }
+});
+
+function meterLoop() {
+  if (!running || !analyser) return;
+  const data = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(data);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+  const rms = Math.sqrt(sum / data.length);
+  const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+  const clampedDb = Math.max(-60, Math.min(0, db));
+  const frac = (clampedDb + 60) / 60;
+  ringLevel.style.strokeDashoffset = CIRC * (1 - frac);
+  ringLevel.style.stroke = clampedDb > -6 ? 'var(--danger)' : 'var(--amber)';
+  dbRead.textContent = db <= -95 ? '\u2013\u2013' : Math.round(db);
+  rafId = requestAnimationFrame(meterLoop);
+}
+
+window.addEventListener('pagehide', () => { if (running) stop(); });
+</script>
+</body>
+</html>
